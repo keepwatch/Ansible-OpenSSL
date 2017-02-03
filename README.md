@@ -5,11 +5,11 @@ transforming certificates into different formats.
 
 ## How to install
 
-Scripts will be compiled and copied into the default Ansible module folder.  The process assumes this folder is `/usr/share/ansible`.  If this is not the location of your system's Ansible Module folder, please modify the script to point to the correct location.  This script also assumes you have the correct permissions to write to the Ansible Module folder.  If you don't use something like `sudo`, `chmod`, or `chown` to give yourself access.
+Scripts will be compiled and placed into the ../dist directory of the repo. The contents of this folder must be saved to your Ansible module library location (default /usr/lib/ansible) - see [here](http://docs.ansible.com/ansible/intro_configuration.html#library) for the config file entry.
 
 **INSTALL**
 
-`sh build.sh && sh sync.sh`
+`sh build.sh`
 
 **What they hell are you building?**
 
@@ -35,20 +35,22 @@ To create a certificate, you simply need to reference the CA and provide the ess
 ---
 
 - name: Create a Server Cert
-  certificate: cadir="/etc/certs" hostname="server.example.com" subj="/DC=com/DC=example/CN=server/" p12password="{{some_env_var}}"
+  certificate: cadir="/etc/certs" certname="server.example.com" subj="/DC=com/DC=example/CN=server/" p12password="{{some_env_var}}"
 
 - name: Create a Client Cert
-  certificate: cadir="/etc/certs" hostname="client.example.com" subj="/DC=com/DC=example/CN=client/" p12password="{{some_env_var}}" certtype="client"
+  certificate: cadir="/etc/certs" certname="client.example.com" subj="/DC=com/DC=example/CN=client/" p12password="{{some_env_var}}" certtype="client"
 
 ```
 
+Additionally, the certificate module can use the parameter **days**, with an integer specifying the number of days for which the certificate will be valid. The default is ~10 years (3653 days).
+
 Note: the default `certtype` is **server**, so you will need to specify **client** if you want a client certificate.  The primary difference between server and client certs is that the certificate is generated with the `-extensions server_ca_extensions` or `-extensions client_ca_extensions`, respectively.  The certificates will also be located in the appropriate directory (`server` or `client`) in the root of the CA directory.  The following files are created during this process:
 
-1.  `{{hostname}}.key.pem` - the private key.
-2.  `{{hostname}}.req.pem` - the signing request.
-3.  `{{hostname}}.cert.pem` - the certificate signed by the CA.
-4.  `{{hostname}}.keycert.pem` - a file containing both the private key and certificate (we found this necessary for some applications using SSL).
-5.  `{{hostname}}.keycert.p12` - the PKCS12 version of the key + cert pair.
+1.  `{{certname}}.key.pem` - the private key.
+2.  `{{certname}}.req.pem` - the signing request.
+3.  `{{certname}}.cert.pem` - the certificate signed by the CA.
+4.  `{{certname}}.keycert.pem` - a file containing both the private key and certificate (we found this necessary for some applications using SSL).
+5.  `{{certname}}.keycert.p12` - the PKCS12 version of the key + cert pair.
 
 It is your responsibility to move the certificates in and out of the CA directory.  This script assume you will perform actions to protect the CA.
 
@@ -58,7 +60,7 @@ To remove a certificate you need to specify the `state` of the cert:
 ---
 
 - name: Remove a Server Cert
-  certificate: cadir="/etc/certs" hostname="server.example.com" subj="doesn't matter" p12password="blah!" state="absent"
+  certificate: cadir="/etc/certs" certname="server.example.com" subj="doesn't matter" p12password="blah!" state="absent"
 
 ```
 
